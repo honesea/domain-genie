@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Enter transition */
+.domain-anim-enter {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.domain-anim-enter-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.domain-anim-enter-active {
+  transition: all 400ms cubic-bezier(0.47, 1.64, 0.41, 0.8);
+}
+
+/* Exit transition */
+.domain-anim-exit {
+  opacity: 1;
+}
+
+.domain-anim-exit-active {
+  opacity: 0;
+}
+
+.domain-anim-exit-active {
+  transition: opacity 200ms;
+  transition-timing-function: ease-in;
+}

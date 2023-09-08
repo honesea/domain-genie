@@ -4,6 +4,7 @@ import {
   Configuration,
   OpenAIApi,
 } from "openai-edge";
+import { NextResponse } from "next/server";
 
 // Create an OpenAI API client (that's edge friendly!)
 const config = new Configuration({
@@ -36,16 +37,28 @@ export async function POST(req: Request) {
     },
   ];
 
-  // Ask OpenAI for a streaming chat completion given the prompt
-  const response = await openai.createChatCompletion({
-    model: "gpt-3.5-turbo",
-    stream: true,
-    messages,
-  });
+  try {
+    // Ask OpenAI for a streaming chat completion given the prompt
+    const response = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      stream: true,
+      messages,
+    });
 
-  // Convert the response into a friendly text-stream
-  const stream = OpenAIStream(response);
+    // If the response is an error, throw it
+    if (!response.ok) {
+      throw new Error(response.statusText || "Something went wrong");
+    }
 
-  // Respond with the stream
-  return new StreamingTextResponse(stream);
+    // Convert the response into a friendly text-stream
+    const stream = OpenAIStream(response);
+
+    // Respond with the stream
+    return new StreamingTextResponse(stream);
+  } catch {
+    NextResponse.json(
+      { message: "Something went wrong" },
+      { status: 500, statusText: "Something went wrong" },
+    );
+  }
 }

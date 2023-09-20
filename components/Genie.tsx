@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { toast } from "react-toastify";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
+import Spinner from "./Spinner";
 
 export default function Genie() {
+  const domainDescriptionTextarea = useRef<HTMLTextAreaElement>(null);
+
   const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState("");
   const [domains, setDomains] = useState<string[]>([]);
+
+  const handleKeyDown = (event: any) => {
+    if (event.key === "Enter") {
+      domainDescriptionTextarea?.current?.blur();
+
+      if (!!description) {
+        getDomains();
+      }
+    }
+  };
 
   async function getDomains() {
     setLoading(true);
@@ -47,8 +61,8 @@ export default function Genie() {
         // Reset domain string as new domains have already been processed
         domainString = partialDomain || "";
       }
-    } catch (error) {
-      alert(error);
+    } catch (error: any) {
+      toast.error(error);
     } finally {
       setLoading(false);
     }
@@ -57,26 +71,29 @@ export default function Genie() {
   return (
     <div className="flex flex-col items-center gap-12">
       <section className="flex w-full max-w-screen-sm flex-col gap-2">
-        <label>Describe your website:</label>
+        <label className="text-sm">Describe your website:</label>
         <textarea
-          className="resize-none rounded border border-neutral-300 p-3"
+          ref={domainDescriptionTextarea}
+          className="resize-none rounded border border-neutral-300 p-3 outline-amber-400"
           rows={4}
           maxLength={150}
+          onKeyDown={handleKeyDown}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="An e-commerce store for selling shoes"
         />
-        <span className="text-right text-neutral-400">
+        <span className="text-right text-sm text-neutral-400">
           {description.length} / 150
         </span>
         <button
           className={`w-full rounded px-2 py-3 text-lg transition-all ${
-            loading
+            loading || !description
               ? "pointer-events-none bg-amber-100 text-neutral-600"
               : "bg-amber-400 text-white"
           }`}
+          disabled={loading || !description}
           onClick={getDomains}
         >
-          {loading ? "Loading..." : "Genie Time!"}
+          {loading ? <Spinner /> : <span>Genie Time!</span>}
         </button>
       </section>
 

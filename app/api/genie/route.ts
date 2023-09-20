@@ -3,7 +3,7 @@ import { OpenAIStream, StreamingTextResponse } from "ai";
 import { ChatCompletionMessageParam } from "openai/resources/chat/index.mjs";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY + "oooh",
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export const runtime = "edge";

@@ -10,6 +10,7 @@ export default function Genie() {
 
   async function getDomains() {
     setLoading(true);
+    setDomains([]);
 
     try {
       const response = await fetch("/api/genie", {
@@ -17,39 +18,37 @@ export default function Genie() {
         body: JSON.stringify({ description }),
       });
 
-      if (response.ok && response.body) {
-        const reader = response.body.getReader();
-
-        setDomains([]);
-        let domainString = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-
-          if (done) {
-            const newDomains = domainString.split(",");
-            setDomains((domains) => [...domains, ...newDomains]);
-            break;
-          }
-
-          // Process the chunk of data
-          const chunk = new TextDecoder().decode(value);
-          domainString += chunk;
-
-          // Parse the string into an array of domains
-          const newDomains = domainString.split(",");
-          const partialDomain = newDomains.pop();
-          setDomains((domains) => [...domains, ...newDomains]);
-
-          // Reset domain string as new domains have already been processed
-          domainString = partialDomain || "";
-        }
-      } else {
+      if (!response.ok || !response.body) {
         const { error } = await response.json();
-        alert(error);
+        throw error;
+      }
+
+      const reader = response.body.getReader();
+
+      let domainString = "";
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          const newDomains = domainString.split(",");
+          setDomains((domains) => [...domains, ...newDomains]);
+          break;
+        }
+
+        // Process the chunk of data
+        const chunk = new TextDecoder().decode(value);
+        domainString += chunk;
+
+        // Parse the string into an array of domains
+        const newDomains = domainString.split(",");
+        const partialDomain = newDomains.pop();
+        setDomains((domains) => [...domains, ...newDomains]);
+
+        // Reset domain string as new domains have already been processed
+        domainString = partialDomain || "";
       }
     } catch (error) {
-      console.error(`Error processing response: ${error}`);
+      alert(error);
     } finally {
       setLoading(false);
     }

@@ -144,11 +144,14 @@ export default function Genie() {
       );
     } catch (error: any) {
       toast.error(error);
+      setDomainStatuses((prevStatuses) =>
+        new Map(prevStatuses).set(domain, "UNAVAILABLE"),
+      );
     }
   }
 
   return (
-    <div className="flex flex-col items-center gap-12">
+    <div className="flex w-full flex-col items-center gap-12">
       <section className="flex w-full max-w-screen-sm flex-col gap-2">
         <label className="text-sm">Describe your website:</label>
         <textarea
@@ -176,7 +179,7 @@ export default function Genie() {
         </button>
       </section>
 
-      <section className="w-full">
+      <section className="w-full max-w-screen-xl">
         <TransitionGroup className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {domains.map((domain) => (
             <CSSTransition key={domain} timeout={500} classNames="domain-anim">

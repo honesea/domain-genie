@@ -3,7 +3,42 @@
 import { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
+import {
+  ArrowPathIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/solid";
 import Spinner from "./Spinner";
+
+type DomainStatus = "LOADING" | "AVAILABLE" | "UNAVAILABLE";
+
+const Domain = ({
+  domain,
+  status,
+}: {
+  domain: string;
+  status: DomainStatus;
+}) => (
+  <div className="flex w-full flex-col gap-1 rounded border px-2 py-3 text-center text-2xl">
+    <span>{domain}</span>
+    <div className="flex items-center justify-center gap-1">
+      {status === "LOADING" ? (
+        <ArrowPathIcon className="h-3 w-3 animate-spin text-neutral-400" />
+      ) : status === "AVAILABLE" ? (
+        <CheckCircleIcon className="h-4 w-4 text-green-500" />
+      ) : (
+        <XCircleIcon className="h-4 w-4 text-red-500" />
+      )}
+      <span className="text-xs text-neutral-400">
+        {status === "LOADING"
+          ? "Checking"
+          : status === "AVAILABLE"
+          ? "Available"
+          : "Unavailable"}
+      </span>
+    </div>
+  </div>
+);
 
 export default function Genie() {
   const domainDescriptionTextarea = useRef<HTMLTextAreaElement>(null);
@@ -11,6 +46,9 @@ export default function Genie() {
   const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState("");
   const [domains, setDomains] = useState<string[]>([]);
+  const [domainStatuses, setDomainStatuses] = useState<
+    Map<string, DomainStatus>
+  >(new Map());
 
   const handleKeyDown = (event: any) => {
     if (event.key === "Enter") {
@@ -25,6 +63,7 @@ export default function Genie() {
   async function getDomains() {
     setLoading(true);
     setDomains([]);
+    setDomainStatuses(new Map());
 
     try {
       const response = await fetch("/api/genie", {
@@ -45,7 +84,15 @@ export default function Genie() {
 
         if (done) {
           const newDomains = domainString.split(",");
-          setDomains((domains) => [...domains, ...newDomains]);
+          const cleanedDomains = newDomains.map((domain) =>
+            domain.trim().toLowerCase(),
+          );
+          setDomains((domains) => [...domains, ...cleanedDomains]);
+
+          for (const domain of cleanedDomains) {
+            validateDomain(domain);
+          }
+
           break;
         }
 
@@ -56,7 +103,14 @@ export default function Genie() {
         // Parse the string into an array of domains
         const newDomains = domainString.split(",");
         const partialDomain = newDomains.pop();
-        setDomains((domains) => [...domains, ...newDomains]);
+        const cleanedDomains = newDomains.map((domain) =>
+          domain.trim().toLowerCase(),
+        );
+        setDomains((domains) => [...domains, ...cleanedDomains]);
+
+        for (const domain of cleanedDomains) {
+          validateDomain(domain);
+        }
 
         // Reset domain string as new domains have already been processed
         domainString = partialDomain || "";
@@ -65,6 +119,31 @@ export default function Genie() {
       toast.error(error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function validateDomain(domain: string) {
+    setDomainStatuses((prevStatuses) =>
+      new Map(prevStatuses).set(domain, "LOADING"),
+    );
+
+    try {
+      const response = await fetch("/api/validate", {
+        method: "POST",
+        body: JSON.stringify({ domain }),
+      });
+
+      if (!response.ok) {
+        const { error } = await response.json();
+        throw error;
+      }
+
+      const result = await response.json();
+      setDomainStatuses((prevStatuses) =>
+        new Map(prevStatuses).set(domain, result.domain_status),
+      );
+    } catch (error: any) {
+      toast.error(error);
     }
   }
 
@@ -85,7 +164,7 @@ export default function Genie() {
           {description.length} / 150
         </span>
         <button
-          className={`w-full rounded px-2 py-3 text-lg transition-all ${
+          className={`h-14 w-full rounded px-2 py-3 text-lg transition-all ${
             loading || !description
               ? "pointer-events-none bg-amber-100 text-neutral-600"
               : "bg-amber-400 text-white"
@@ -99,11 +178,12 @@ export default function Genie() {
 
       <section className="w-full">
         <TransitionGroup className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {domains.map((domain, index) => (
-            <CSSTransition key={index} timeout={500} classNames="domain-anim">
-              <div className="w-full rounded border px-2 py-3 text-center text-2xl">
-                <span>{domain.toLowerCase()}</span>
-              </div>
+          {domains.map((domain) => (
+            <CSSTransition key={domain} timeout={500} classNames="domain-anim">
+              <Domain
+                domain={domain}
+                status={domainStatuses.get(domain) || "LOADING"}
+              />
             </CSSTransition>
           ))}
         </TransitionGroup>

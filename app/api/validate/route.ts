@@ -1,6 +1,25 @@
+import { Ratelimit } from "@upstash/ratelimit";
+import { kv } from "@vercel/kv";
+import { NextRequest, NextResponse } from "next/server";
+
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
 
-export async function POST(req: Request) {
+const ratelimit = new Ratelimit({
+  redis: kv,
+  limiter: Ratelimit.slidingWindow(50, "60 s"),
+});
+
+export async function POST(req: NextRequest) {
+  const ip = req.ip ?? "127.0.0.1";
+  const { success } = await ratelimit.limit(ip);
+
+  if (!success) {
+    return NextResponse.json(
+      { error: "You have reached your request limit" },
+      { status: 429 },
+    );
+  }
+
   const { domain } = await req.json();
 
   try {
@@ -33,9 +52,9 @@ export async function POST(req: Request) {
       domainStatus = "UNAVAILABLE";
     }
 
-    return Response.json({ domain_status: domainStatus }, { status: 200 });
+    return NextResponse.json({ domain_status: domainStatus }, { status: 200 });
   } catch (error: any) {
-    return Response.json(
+    return NextResponse.json(
       { error: error.message || "Internal Server Error" },
       { status: error.status || 500 },
     );

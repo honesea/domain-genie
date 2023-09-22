@@ -1,14 +1,32 @@
 import OpenAI from "openai";
 import { OpenAIStream, StreamingTextResponse } from "ai";
 import { ChatCompletionMessageParam } from "openai/resources/chat/index.mjs";
+import { Ratelimit } from "@upstash/ratelimit";
+import { kv } from "@vercel/kv";
+import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = "edge";
+
+const ratelimit = new Ratelimit({
+  redis: kv,
+  limiter: Ratelimit.slidingWindow(50, "60 s"),
+});
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export const runtime = "edge";
+export async function POST(req: NextRequest) {
+  const ip = req.ip ?? "127.0.0.1";
+  const { success } = await ratelimit.limit(ip);
 
-export async function POST(req: Request) {
+  if (!success) {
+    return NextResponse.json(
+      { error: "You have reached your request limit." },
+      { status: 429 },
+    );
+  }
+
   const { description } = await req.json();
 
   const messages: ChatCompletionMessageParam[] = [
@@ -39,7 +57,7 @@ export async function POST(req: Request) {
     const stream = OpenAIStream(response);
     return new StreamingTextResponse(stream);
   } catch (error: any) {
-    return Response.json(
+    return NextResponse.json(
       { error: error.message || "Internal Server Error" },
       { status: error.status || 500 },
     );

@@ -9,6 +9,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Domain Genie",
   description: "AI-powered domain name generator",
+  openGraph: {
+    title: "Domain Genie",
+    description: "AI-powered domain name generator",
+  },
 };
 
 export default function RootLayout({

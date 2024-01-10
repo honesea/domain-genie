@@ -13,7 +13,9 @@ business or club and Domain Genie will come up with some possible domain names. 
 - Rapid API integration
 - Vercel KV + Upstash rate limiting
 
-## Running the app
+## 🤝 Contributing
+
+Clone the repo.
 
 Add a .env.local file with the follwing variables:
 
@@ -35,3 +37,7 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+### Submit a pull request
+
+If you'd like to contribute, please fork the repository and open a pull request to the `main` branch.
